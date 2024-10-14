@@ -51,7 +51,6 @@ Visual brain decoding aims to decode visual information from human brain activit
 
 
 ## ❤️ Acknowledgments
-This project is based on [BasicSR](https://github.com/XPixelGroup/BasicSR).
 
 ## 📧 Contact
 If you have any questions, please feel free to contact: `xiangtao.kong@connect.polyu.hk`
