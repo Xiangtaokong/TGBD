@@ -91,7 +91,7 @@ def available_models() -> List[str]:
     return list(_MODELS.keys())
 
 
-def load_mindc(name: str, device: Union[str, torch.device] = "cuda" if torch.cuda.is_available() else "cpu", jit: bool = False, download_root: str = None,dropout_p="dd", network='ddd',brain_dim='ddd'):
+def load_mindc(name: str, device: Union[str, torch.device] = "cuda" if torch.cuda.is_available() else "cpu", jit: bool = False, download_root: str = None,dropout_p="dd"):
     """Load a CLIP model
 
     Parameters
@@ -136,7 +136,7 @@ def load_mindc(name: str, device: Union[str, torch.device] = "cuda" if torch.cud
             state_dict = torch.load(opened_file, map_location="cpu")
 
     if not jit:
-        model = build_mindc_model(state_dict or model.state_dict(),dropout_p=dropout_p,network=network,brain_dim=brain_dim).to(device)
+        model = build_mindc_model(state_dict or model.state_dict(),dropout_p=dropout_p).to(device)
         if str(device) == "cpu":
             model.float()
         return model

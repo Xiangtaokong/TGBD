@@ -8,13 +8,13 @@ from concurrent.futures import ThreadPoolExecutor
 import time
 
 
-# 假设voxel1和voxel2是形状为(h, w, c)的numpy数组
+# voxel1,voxel2: (h, w, c)
 
 data_list=[]
 
 def cal_sim(subj):
 
-    subj_ref="102816_Subj3"#102311_Subj2
+    subj_ref="102311_Subj2"#102311_Subj2
     fmri_dirs='/home/notebook/data/personal/S9053103/mind_concept/Dataset/HCP/HCP_fmri/fmri_mix5s'
 
 
@@ -24,17 +24,14 @@ def cal_sim(subj):
     voxel1_flat=np.load(fmri_path1).flatten()
     voxel2_flat=np.load(fmri_path2).flatten()
 
-    # 2. 余弦相似度 越接近1越相似
+   
     cosine_sim = cosine_similarity([voxel1_flat], [voxel2_flat])[0][0]
 
     #print("Cosine Similarity:", cosine_sim)
 
     data_list.append((subj,0,cosine_sim))
 
-    # print("SBUJ: {}".format(subj))
-    # # 1. 欧几里得距离 越小越相似
-    # euclidean_distance = euclidean(voxel1_flat, voxel2_flat)
-    # print("Euclidean Distance:", euclidean_distance)
+
 
 
 
@@ -42,10 +39,10 @@ subjs=["100610_Subj1","102311_Subj2","104416_Subj4","105923_Subj5","108323_Subj6
 top10_count = {}
 last10_count = {}
 
-with open('/home/notebook/data/personal/S9053103/mind_concept/Dataset/HCP/hcp_stimuli_movie/all_index.txt') as f:
+with open('/home/notebook/data/personal/S9053103/TGBD/Datasets/HCP/all_index.txt') as f:
     filename_list=f.readlines()
 
-with open('/home/notebook/data/personal/S9053103/brain_decoding/mindc/similarity_for_subj03_all3127.txt','w') as fw:
+with open('/home/notebook/data/personal/S9053103/brain_decoding/mindc/similarity_for_subj02_all3127.txt','w') as fw:
 
     count_=0
     for filename in filename_list:
@@ -53,22 +50,14 @@ with open('/home/notebook/data/personal/S9053103/brain_decoding/mindc/similarity
         filename=filename.strip()
         data_list=[]
 
-        
-        # 使用 ThreadPoolExecutor 进行并行处理
+    
         with ThreadPoolExecutor(max_workers=30) as executor:
-            # 并行执行上传任务
             executor.map(cal_sim, subjs)
-
-        # # 按照数据1从小到大排序
-        # sorted_by_data1_desc = sorted(data_list, key=lambda x: x[1])
-        # print("Sorted by euclidean_distance (Rising):")
-        # for item in sorted_by_data1_desc[:5]:
-        #     print(f"Name: {item[0]}, Data1: {item[1]}, Data2: {item[2]}")
 
         print("\n\nimg:{}".format(filename))
         fw.write("\n\nimg:{}".format(filename))
 
-        # 按照数据2从大到小排序
+
         sorted_by_data2_desc = sorted(data_list, key=lambda x: x[2], reverse=True)
         print("\nSorted by cosine_sim (Descending):")
         fw.write("\nSorted by cosine_sim (Descending):")
@@ -82,7 +71,6 @@ with open('/home/notebook/data/personal/S9053103/brain_decoding/mindc/similarity
             else:
                 top10_count[name] = 1
 
-        # 按照数据2从小到大排序
         sorted_by_data2_desc = sorted(data_list, key=lambda x: x[2])
         print("\nSorted by cosine_sim (Rising):")
         fw.write("\nSorted by cosine_sim (Rising):")
@@ -95,13 +83,12 @@ with open('/home/notebook/data/personal/S9053103/brain_decoding/mindc/similarity
                 last10_count[name] += 1
             else:
                 last10_count[name] = 1
-        # 记录结束时间
+   
         end_time = time.time()
 
-        # 计算运行时间
         elapsed_time = end_time - start_time
 
-        print(f"代码运行时间: {elapsed_time:.6f} 秒")
+        print(f"Running time: {elapsed_time:.6f} s")
         count_+=1
         print('{}/3127'.format(count_))
 
@@ -132,16 +119,3 @@ with open('/home/notebook/data/personal/S9053103/brain_decoding/mindc/similarity
     print(output_string)
     fw.write(output_string)
 
-
-
-    # # 将3D体素展平为1D向量
-    # voxel1_flat = voxel1.flatten()
-    # voxel2_flat = voxel2.flatten()
-
-    # # 1. 欧几里得距离
-    # euclidean_distance = euclidean(voxel1_flat, voxel2_flat)
-    # print("Euclidean Distance:", euclidean_distance)
-
-    # # 2. 余弦相似度
-    # cosine_sim = cosine_similarity([voxel1_flat], [voxel2_flat])[0][0]
-    # print("Cosine Similarity:", cosine_sim)

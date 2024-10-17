@@ -5,7 +5,7 @@ import numpy as np
 import torch
 import torch.nn.functional as F
 from torch import nn
-from functools import partial
+
 
 class Bottleneck(nn.Module):
     expansion = 4
@@ -229,6 +229,7 @@ class VisionTransformer(nn.Module):
         x = torch.cat([self.class_embedding.to(x.dtype) + torch.zeros(x.shape[0], 1, x.shape[-1], dtype=x.dtype, device=x.device), x], dim=1)  # shape = [*, grid ** 2 + 1, width]
         x = x + self.positional_embedding.to(x.dtype)
         x = self.ln_pre(x)
+
         x = x.permute(1, 0, 2)  # NLD -> LND
         x = self.transformer(x)
         x = x.permute(1, 0, 2)  # LND -> NLD
@@ -239,7 +240,7 @@ class VisionTransformer(nn.Module):
 
         if self.proj is not None:
             x = x @ self.proj
-        
+
         return x,x_fea
 
 
@@ -390,8 +391,8 @@ class CLIP(nn.Module):
 
             # cosine similarity as logits
             logit_scale = self.logit_scale.exp()
-            logits_per_image = logit_scale * image_features @ text_features.t() #image在前， 这是image找fmri
-            logits_per_text = logits_per_image.t() #fmri找image
+            logits_per_image = logit_scale * image_features @ text_features.t()
+            logits_per_text = logits_per_image.t()
 
         return logits_per_image, logits_per_text
 
@@ -457,7 +458,554 @@ def build_model(state_dict: dict):
     for key in ["input_resolution", "context_length", "vocab_size"]:
         if key in state_dict:
             del state_dict[key]
-    #convert_weights(model)
+
+    convert_weights(model)
     model.load_state_dict(state_dict)
     return model.eval()
 
+# class BrainNetwork(nn.Module):
+#     def __init__(self, h=4096, in_dim=20000, out_dim=257*1024, seq_len=1, n_blocks=4, drop=.15, clip_size=1024):
+#         super().__init__()
+#         self.seq_len = seq_len
+#         self.h = h
+#         self.clip_size = clip_size
+#         self.mixer_blocks1 = nn.ModuleList([
+#             self.mixer_block1(h, drop) for _ in range(n_blocks)
+#         ])
+#         self.mixer_blocks2 = nn.ModuleList([
+#             self.mixer_block2(seq_len, drop) for _ in range(n_blocks)
+#         ])
+        
+#         # Output linear layer
+#         self.backbone_linear = nn.Linear(h * seq_len, out_dim, bias=True) 
+#         # self.clip_proj = self.projector(clip_size, clip_size, h=clip_size)
+        
+#         self.input_proj = self.projector(in_dim, h, h=4096)
+            
+#     def projector(self, in_dim, out_dim, h=4096):
+#         return nn.Sequential(
+#             nn.LayerNorm(in_dim),
+#             nn.GELU(),
+#             nn.Linear(in_dim, h),
+#             nn.LayerNorm(h),
+#             nn.GELU(),
+#             nn.Linear(h, h),
+#             nn.LayerNorm(h),
+#             nn.GELU(),
+#             nn.Linear(h, out_dim)
+#         )
+    
+#     def mlp(self, in_dim, out_dim, drop):
+#         return nn.Sequential(
+#             nn.Linear(in_dim, out_dim),
+#             nn.GELU(),
+#             nn.Dropout(drop),
+#             nn.Linear(out_dim, out_dim),
+#         )
+    
+#     def mixer_block1(self, h, drop):
+#         return nn.Sequential(
+#             nn.LayerNorm(h),
+#             self.mlp(h, h, drop),  # Token mixing
+#         )
+
+#     def mixer_block2(self, seq_len, drop):
+#         return nn.Sequential(
+#             nn.LayerNorm(seq_len),
+#             self.mlp(seq_len, seq_len, drop)  # Channel mixing
+#         )
+        
+#     def forward(self, x):
+#         # make empty tensors
+#         c,b = torch.Tensor([0.]), torch.Tensor([[0.],[0.]])
+        
+#         # Mixer blocks
+#         residual1 = x
+#         residual2 = x.permute(0,2,1)
+#         for block1, block2 in zip(self.mixer_blocks1,self.mixer_blocks2):
+#             x = block1(x) + residual1
+#             residual1 = x
+#             x = x.permute(0,2,1)
+            
+#             x = block2(x) + residual2
+#             residual2 = x
+#             x = x.permute(0,2,1)
+            
+#         x = x.reshape(x.size(0), -1)
+#         backbone = self.backbone_linear(x).reshape(len(x), -1, self.clip_size)
+#         # if self.clip_scale>0:
+#         #     c = self.clip_proj(backbone)
+
+#         # if self.blurry_recon:
+#         #     b = self.blin1(x)
+#         #     b = self.bdropout(b)
+#         #     b = b.reshape(b.shape[0], -1, 7, 7).contiguous()
+#         #     b = self.bnorm(b)
+#         #     b_aux = self.b_maps_projector(b).flatten(2).permute(0,2,1)
+#         #     b_aux = b_aux.view(len(b_aux), 49, 512)
+#         #     b = (self.bupsampler(b), b_aux)
+        
+#         return backbone
+
+#     def encode_fmri(self, fmri):
+#         x=self.input_proj(fmri) 
+#         print(x.shape)
+#         residual1 = x
+#         residual2 = x.permute(0,2,1)
+#         for block1, block2 in zip(self.mixer_blocks1,self.mixer_blocks2):
+#             x = block1(x) + residual1
+#             residual1 = x
+#             x = x.permute(0,2,1)
+            
+#             x = block2(x) + residual2
+#             residual2 = x
+#             x = x.permute(0,2,1)
+            
+#         x = x.reshape(x.size(0), -1)
+#         print(x.shape)
+#         backbone = self.backbone_linear(x).reshape(len(x), -1, self.clip_size)
+#         print(backbone.shape)
+
+#         x_fea=backbone
+       
+#         return x_fea,x_fea
+    
+
+class Mind_c_mlp(nn.Module):
+    def __init__(self,
+                 embed_dim: int,
+                 # vision
+                 image_resolution: int,
+                 vision_layers: Union[Tuple[int, int, int, int], int],
+                 vision_width: int,
+                 vision_patch_size: int,
+                 dropout_p: float,
+                 ):
+        super().__init__()
+
+        # N*15000-18000
+        # 目标 77*768
+
+        self.mlp1 = self.mlp(in_dim=18000,out_dim=8192)
+        self.mlp11 = self.mlp(in_dim=8192,out_dim=8192)
+        self.mlp12 = self.mlp(in_dim=8192,out_dim=8192)
+        self.mlp2 = self.mlp(in_dim=8192,out_dim=4096)
+        self.mlp21 = self.mlp(in_dim=4096,out_dim=4096)
+        self.mlp22 = self.mlp(in_dim=4096,out_dim=4096)
+        self.mlp3 = self.mlp(in_dim=4096,out_dim=2048)
+        self.mlp4 = self.mlp(in_dim=2048,out_dim=1024)
+        self.mlp5 = self.mlp(in_dim=1024,out_dim=768)
+
+        # self.conv3 = nn.Conv1d(in_channels=1, out_channels=256, kernel_size=3, padding=1)
+        # self.global_avg_pool3 = nn.AdaptiveAvgPool1d(1024)
+
+        # self.conv4 = nn.Conv1d(in_channels=77, out_channels=1, kernel_size=3, padding=1)
+
+        input_resolution=image_resolution
+        patch_size=vision_patch_size
+        width=vision_width
+        vision_heads = vision_width // 64
+        layers=vision_layers
+        heads=vision_heads
+        output_dim=embed_dim
+
+        scale = width ** -0.5
+        self.class_embedding = nn.Parameter(scale * torch.randn(width))
+
+        self.transformer = Transformer(width, layers, heads)
+        self.positional_embedding = nn.Parameter(scale * torch.randn((input_resolution // patch_size) ** 2 + 1, width))
+        self.initialize_parameters()
+
+        self.dropout = nn.Dropout(p=dropout_p)
+
+        self.dtype=torch.float16
+
+    def initialize_parameters(self):
+
+        nn.init.normal_(self.positional_embedding, std=0.01)
+
+
+        proj_std = (self.transformer.width ** -0.5) * ((2 * self.transformer.layers) ** -0.5)
+        attn_std = self.transformer.width ** -0.5
+        fc_std = (2 * self.transformer.width) ** -0.5
+        for block in self.transformer.resblocks:
+            nn.init.normal_(block.attn.in_proj_weight, std=attn_std)
+            nn.init.normal_(block.attn.out_proj.weight, std=proj_std)
+            nn.init.normal_(block.mlp.c_fc.weight, std=fc_std)
+            nn.init.normal_(block.mlp.c_proj.weight, std=proj_std)
+
+    def build_attention_mask(self):
+        # lazily create causal attention mask, with full attention between the vision tokens
+        # pytorch uses additive attention mask; fill with -inf
+        mask = torch.empty(self.context_length, self.context_length)
+        mask.fill_(float("-inf"))
+        mask.triu_(1)  # zero out the lower diagonal
+        return mask
+
+    def mlp(self, in_dim, out_dim, drop=0.15):
+        return nn.Sequential(
+            nn.LayerNorm(in_dim),
+            nn.Linear(in_dim, out_dim),
+            nn.GELU(),
+            nn.Dropout(drop),
+            nn.Linear(out_dim, out_dim),
+        )
+
+
+    def encode_fmri(self, fmri):
+
+        x = fmri.type(self.dtype)
+        x = self.mlp1(x)  # [batch_size, n_ctx, d_model]
+        x = self.mlp11(x)
+        x = self.mlp12(x)
+        x = self.mlp2(x)  # [batch_size, n_ctx, d_model]
+        # x = self.conv3(x)  # [batch_size, n_ctx, d_model]
+        # x = self.global_avg_pool3(x)  # [batch_size, n_ctx, d_model]
+        # x = torch.cat([self.class_embedding.to(x.dtype) + torch.zeros(x.shape[0], 1, x.shape[-1], dtype=x.dtype, device=x.device), x], dim=1)  # shape = [*, grid ** 2 + 1, width]
+        # x = x + self.positional_embedding.type(self.dtype)
+        # x = x.permute(1, 0, 2)  # NLD -> LND
+        # x = self.transformer(x)
+        # x = x.permute(1, 0, 2)  # LND -> NLD
+        x = self.mlp21(x)
+        x = self.mlp22(x)                
+        x = self.mlp3(x) 
+        x = self.mlp4(x) 
+        x = self.mlp5(x) 
+
+        x_fea=x
+       
+        return x_fea,x_fea
+    
+    def encode_fmri_dropout(self, fmri):
+
+        x = fmri.type(self.dtype)
+        x = self.conv1(x)  # [batch_size, n_ctx, d_model]
+        x = self.dropout(x)
+        x = self.global_avg_pool1(x)  # [batch_size, n_ctx, d_model]
+        x = self.conv2(x)  # [batch_size, n_ctx, d_model]
+        x = self.dropout(x)
+        x = self.global_avg_pool2(x)  # [batch_size, n_ctx, d_model]
+        x = self.conv3(x)  # [batch_size, n_ctx, d_model]
+        x = self.dropout(x)
+        x = self.global_avg_pool3(x)  # [batch_size, n_ctx, d_model]
+        x = torch.cat([self.class_embedding.to(x.dtype) + torch.zeros(x.shape[0], 1, x.shape[-1], dtype=x.dtype, device=x.device), x], dim=1)  # shape = [*, grid ** 2 + 1, width]
+        x = x + self.positional_embedding.type(self.dtype)
+
+        x = x.permute(1, 0, 2)  # NLD -> LND
+        x = self.transformer(x)
+        x = x.permute(1, 0, 2)  # LND -> NLD
+
+        x_fea=x
+       
+        return x_fea,x_fea
+
+
+    def forward(self, image, text):
+
+        print(ddd)
+
+        return logits_per_image, logits_per_text
+
+
+class Mind_c(nn.Module):
+    def __init__(self,
+                 embed_dim: int,
+                 # vision
+                 image_resolution: int,
+                 vision_layers: Union[Tuple[int, int, int, int], int],
+                 vision_width: int,
+                 vision_patch_size: int,
+                 dropout_p: float,
+                 ):
+        super().__init__()
+
+        # N*15000-18000
+        # 目标 77*768
+
+
+        self.conv1 = nn.Conv1d(in_channels=1, out_channels=64, kernel_size=3, padding=1)
+        self.global_avg_pool1 = nn.AdaptiveAvgPool1d(4096)
+        self.conv2 = nn.Conv1d(in_channels=64, out_channels=128, kernel_size=3, padding=1)
+        self.global_avg_pool2 = nn.AdaptiveAvgPool1d(2048)
+        self.conv3 = nn.Conv1d(in_channels=128, out_channels=256, kernel_size=3, padding=1)
+        self.global_avg_pool3 = nn.AdaptiveAvgPool1d(1024)
+
+        self.conv4 = nn.Conv1d(in_channels=77, out_channels=1, kernel_size=3, padding=1)
+
+        input_resolution=image_resolution
+        patch_size=vision_patch_size
+        width=vision_width
+        vision_heads = vision_width // 64
+        layers=vision_layers
+        heads=vision_heads
+        output_dim=embed_dim
+
+        scale = width ** -0.5
+        self.class_embedding = nn.Parameter(scale * torch.randn(width))
+
+        self.transformer = Transformer(width, layers, heads)
+        self.positional_embedding = nn.Parameter(scale * torch.randn((input_resolution // patch_size) ** 2 + 1, width))
+        self.initialize_parameters()
+
+        self.dropout = nn.Dropout(p=dropout_p)
+
+        self.dtype=torch.float16
+
+    def initialize_parameters(self):
+
+        nn.init.normal_(self.positional_embedding, std=0.01)
+
+
+        proj_std = (self.transformer.width ** -0.5) * ((2 * self.transformer.layers) ** -0.5)
+        attn_std = self.transformer.width ** -0.5
+        fc_std = (2 * self.transformer.width) ** -0.5
+        for block in self.transformer.resblocks:
+            nn.init.normal_(block.attn.in_proj_weight, std=attn_std)
+            nn.init.normal_(block.attn.out_proj.weight, std=proj_std)
+            nn.init.normal_(block.mlp.c_fc.weight, std=fc_std)
+            nn.init.normal_(block.mlp.c_proj.weight, std=proj_std)
+
+    def build_attention_mask(self):
+        # lazily create causal attention mask, with full attention between the vision tokens
+        # pytorch uses additive attention mask; fill with -inf
+        mask = torch.empty(self.context_length, self.context_length)
+        mask.fill_(float("-inf"))
+        mask.triu_(1)  # zero out the lower diagonal
+        return mask
+
+
+    def encode_fmri(self, fmri):
+
+
+        x = fmri.type(self.dtype)
+        x = self.conv1(x)  # [batch_size, n_ctx, d_model]
+        x = self.global_avg_pool1(x)  # [batch_size, n_ctx, d_model]
+        x = self.conv2(x)  # [batch_size, n_ctx, d_model]
+        x = self.global_avg_pool2(x)  # [batch_size, n_ctx, d_model]
+        x = self.conv3(x)  # [batch_size, n_ctx, d_model]
+        x = self.global_avg_pool3(x)  # [batch_size, n_ctx, d_model]
+        x = torch.cat([self.class_embedding.to(x.dtype) + torch.zeros(x.shape[0], 1, x.shape[-1], dtype=x.dtype, device=x.device), x], dim=1)  # shape = [*, grid ** 2 + 1, width]
+        x = x + self.positional_embedding.type(self.dtype)
+
+        x = x.permute(1, 0, 2)  # NLD -> LND
+        x = self.transformer(x)
+        x = x.permute(1, 0, 2)  # LND -> NLD
+        x_fea=x
+       
+        return x_fea,x_fea
+    
+    def encode_fmri_dropout(self, fmri):
+
+        
+        x = fmri.type(self.dtype)
+        x = self.dropout(x)
+        x = self.conv1(x)  # [batch_size, n_ctx, d_model]
+        #x = self.dropout(x)
+        x = self.global_avg_pool1(x)  # [batch_size, n_ctx, d_model]
+        x = self.conv2(x)  # [batch_size, n_ctx, d_model]
+        #x = self.dropout(x)
+        x = self.global_avg_pool2(x)  # [batch_size, n_ctx, d_model]
+        x = self.conv3(x)  # [batch_size, n_ctx, d_model]
+        #x = self.dropout(x)
+        x = self.global_avg_pool3(x)  # [batch_size, n_ctx, d_model]
+        x = torch.cat([self.class_embedding.to(x.dtype) + torch.zeros(x.shape[0], 1, x.shape[-1], dtype=x.dtype, device=x.device), x], dim=1)  # shape = [*, grid ** 2 + 1, width]
+        x = x + self.positional_embedding.type(self.dtype)
+
+        x = x.permute(1, 0, 2)  # NLD -> LND
+        x = self.transformer(x)
+        x = x.permute(1, 0, 2)  # LND -> NLD
+
+        x_fea=x
+       
+        return x_fea,x_fea
+
+
+    def forward(self, image, text):
+
+        print(ddd)
+
+        return logits_per_image, logits_per_text
+
+def build_mindc_model(state_dict: dict,dropout_p='ff'):
+
+
+    vision_width = state_dict["visual.conv1.weight"].shape[0]
+    vision_layers = len([k for k in state_dict.keys() if k.startswith("visual.") and k.endswith(".attn.in_proj_weight")])
+    vision_patch_size = state_dict["visual.conv1.weight"].shape[-1]
+    grid_size = round((state_dict["visual.positional_embedding"].shape[0] - 1) ** 0.5)
+    image_resolution = vision_patch_size * grid_size
+    embed_dim = state_dict["text_projection"].shape[1]
+
+    model = Mind_c(
+        embed_dim,
+        image_resolution, vision_layers, vision_width, vision_patch_size,dropout_p,
+    )
+    # model = Mind_c_mlp(
+    #     embed_dim,
+    #     image_resolution, vision_layers, vision_width, vision_patch_size,dropout_p,
+    # )
+
+    for key in ["input_resolution", "context_length", "vocab_size"]:
+        
+        if key in state_dict:
+            del state_dict[key]
+
+    for k,v in list(state_dict.items()):
+        if "visual" in k:
+            del state_dict[k]
+    
+    convert_weights(model)
+    # model.load_state_dict(state_dict,strict=False)
+    convert_weights(model)
+    model=model.half()
+
+    # model=BrainNetwork()
+    # model=model.half()
+    
+    return model
+
+
+# class Mind_c(nn.Module):
+#     def __init__(self,
+#                  embed_dim: int,
+#                  # text
+#                  context_length: int,
+#                  vocab_size: int,
+#                  transformer_width: int,
+#                  transformer_heads: int,
+#                  transformer_layers: int
+#                  ):
+#         super().__init__()
+
+#         # N*15000-18000
+#         # 目标 77*768
+
+
+#         self.conv1 = nn.Conv1d(in_channels=1, out_channels=24, kernel_size=3, padding=1)
+#         self.global_avg_pool1 = nn.AdaptiveAvgPool1d(4096)
+#         self.conv2 = nn.Conv1d(in_channels=24, out_channels=48, kernel_size=3, padding=1)
+#         self.global_avg_pool2 = nn.AdaptiveAvgPool1d(2048)
+#         self.conv3 = nn.Conv1d(in_channels=48, out_channels=77, kernel_size=3, padding=1)
+#         self.global_avg_pool3 = nn.AdaptiveAvgPool1d(768)
+#         self.conv4 = nn.Conv1d(in_channels=77, out_channels=1, kernel_size=3, padding=1)
+ 
+
+#         self.context_length = context_length
+
+#         self.transformer = Transformer(
+#             width=transformer_width,
+#             layers=transformer_layers,
+#             heads=transformer_heads,
+#             attn_mask=self.build_attention_mask()
+#         )
+
+#         self.vocab_size = vocab_size
+#         self.token_embedding = nn.Embedding(vocab_size, transformer_width)
+#         self.positional_embedding = nn.Parameter(torch.empty(self.context_length, transformer_width))
+#         self.ln_final = LayerNorm(transformer_width)
+
+#         # self.ln_post = LayerNorm(width)
+#         # self.proj = nn.Parameter(scale * torch.randn(width, output_dim))
+
+#         self.text_projection = nn.Parameter(torch.empty(transformer_width, embed_dim))
+#         self.logit_scale = nn.Parameter(torch.ones([]) * np.log(1 / 0.07))
+
+#         self.initialize_parameters()
+
+#         self.dtype=torch.float16
+
+#     def initialize_parameters(self):
+#         nn.init.normal_(self.token_embedding.weight, std=0.02)
+#         nn.init.normal_(self.positional_embedding, std=0.01)
+
+
+#         proj_std = (self.transformer.width ** -0.5) * ((2 * self.transformer.layers) ** -0.5)
+#         attn_std = self.transformer.width ** -0.5
+#         fc_std = (2 * self.transformer.width) ** -0.5
+#         for block in self.transformer.resblocks:
+#             nn.init.normal_(block.attn.in_proj_weight, std=attn_std)
+#             nn.init.normal_(block.attn.out_proj.weight, std=proj_std)
+#             nn.init.normal_(block.mlp.c_fc.weight, std=fc_std)
+#             nn.init.normal_(block.mlp.c_proj.weight, std=proj_std)
+
+#         if self.text_projection is not None:
+#             nn.init.normal_(self.text_projection, std=self.transformer.width ** -0.5)
+
+#     def build_attention_mask(self):
+#         # lazily create causal attention mask, with full attention between the vision tokens
+#         # pytorch uses additive attention mask; fill with -inf
+#         mask = torch.empty(self.context_length, self.context_length)
+#         mask.fill_(float("-inf"))
+#         mask.triu_(1)  # zero out the lower diagonal
+#         return mask
+
+
+#     def encode_fmri(self, fmri):
+
+#         x = fmri.type(self.dtype)
+#         x = self.conv1(x)  # [batch_size, n_ctx, d_model]
+#         x = self.global_avg_pool1(x)  # [batch_size, n_ctx, d_model]
+#         x = self.conv2(x)  # [batch_size, n_ctx, d_model]
+#         x = self.global_avg_pool2(x)  # [batch_size, n_ctx, d_model]
+#         x = self.conv3(x)  # [batch_size, n_ctx, d_model]
+#         x = self.global_avg_pool3(x)  # [batch_size, n_ctx, d_model]
+#         x = x + self.positional_embedding.type(self.dtype)
+#         x = x.permute(1, 0, 2)  # NLD -> LND
+#         x = self.transformer(x)
+#         x = x.permute(1, 0, 2)  # LND -> NLD
+#         x = self.ln_final(x).type(self.dtype)
+#         # x.shape = [batch_size, n_ctx, transformer.width]
+#         # take features from the eot embedding (eot_token is the highest number in each sequence)
+#         # x = x[torch.arange(x.shape[0]), text_.argmax(dim=-1)] @ self.text_projection
+
+#         x = self.conv4(x) @ self.text_projection
+#         x = x.squeeze(1)
+#         return x
+
+
+#     def forward(self, image, text):
+#         image_features = self.encode_image(image)
+#         text_features = self.encode_text(text)
+
+#         # normalized features
+#         image_features = image_features / image_features.norm(dim=1, keepdim=True)
+#         text_features = text_features / text_features.norm(dim=1, keepdim=True)
+
+#         # cosine similarity as logits
+#         logit_scale = self.logit_scale.exp()
+#         logits_per_image = logit_scale * image_features @ text_features.t()
+#         logits_per_text = logits_per_image.t()
+
+#         # shape = [global_batch_size, global_batch_size]
+#         return logits_per_image, logits_per_text
+
+# def build_mindc_model(state_dict: dict):
+
+
+#     embed_dim = state_dict["text_projection"].shape[1]
+#     context_length = state_dict["positional_embedding"].shape[0]
+#     vocab_size = state_dict["token_embedding.weight"].shape[0]
+#     transformer_width = state_dict["ln_final.weight"].shape[0]
+#     transformer_heads = transformer_width // 64
+#     transformer_layers = len(set(k.split(".")[2] for k in state_dict if k.startswith("transformer.resblocks")))
+
+#     model = Mind_c(
+#         embed_dim,
+#         context_length, vocab_size, transformer_width, transformer_heads, transformer_layers
+#     )
+
+#     for key in ["input_resolution", "context_length", "vocab_size"]:
+        
+#         if key in state_dict:
+#             del state_dict[key]
+
+#     for k,v in list(state_dict.items()):
+#         if "visual" in k:
+#             del state_dict[k]
+    
+#     convert_weights(model)
+#     model.load_state_dict(state_dict,strict=False)
+#     convert_weights(model)
+#     model=model.half()
+    
+#     return model
