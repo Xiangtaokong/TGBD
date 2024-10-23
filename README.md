@@ -46,25 +46,25 @@ conda env create -f environment.yml
 
 [Baidu Drive](https://pan.baidu.com/s/1ukkf7nZHToymDW1DtUyxrg?pwd=fevm).    Key: fevm 
 
-'TGBD/movie_frame.zip' contains the training images which are extracted from movies. 'TGBD/hcp_Movie_fmri/XXX' contains the corresponding fmri voxels of different participants. You can download a part of all 177 subjects to save disk space. Run 'Datasets/HCP/read_nii1.py' to generate the final fmri voxels uesd in this work.
+`TGBD/movie_frame.zip` contains the training images which are extracted from movies. `TGBD/hcp_Movie_fmri/XXX` contains the corresponding fmri voxels of different participants. You can download a part of all 177 subjects to save disk space. Run `Datasets/HCP/read_nii1.py` to generate the final fmri voxels uesd in this work.
 
 #### Setp 2 Download the pre-trained models
 
 [Baidu Drive](https://pan.baidu.com/s/1ukkf7nZHToymDW1DtUyxrg?pwd=fevm).    Key: fevm 
 
-'TGBD/pretrained_models' contains models pre-trained on 1 and 177 subjects.
+`TGBD/pretrained_models` contains models pre-trained on 1 and 177 subjects.
 
 #### Setp 3 Edit the test yml file
 
-Edit 'Brain_decoding/options/test/xxxx.yml' to make sure the data/model paths are correct.
-'subj1 or 177.yml' means testing the model trained on 1 or 177 subjects.
+Edit `Brain_decoding/options/test/xxxx.yml` to make sure the data/model paths are correct.
+`subj1 or 177.yml` means testing the model trained on 1 or 177 subjects.
 
 #### Setp 4 Run the command
 
-'''
+```
 cd Brain_decoding
 python test.py --opt options/test/xxxx.yml
-'''
+```
 
 ## :star: Train 
 
@@ -72,20 +72,20 @@ python test.py --opt options/test/xxxx.yml
 
 [Baidu Drive](https://pan.baidu.com/s/1ukkf7nZHToymDW1DtUyxrg?pwd=fevm).    Key: fevm 
 
-'TGBD/movie_frame.zip' contains the training images which are extracted from movies. 'TGBD/hcp_Movie_fmri/XXX' contains the corresponding fmri voxels of different participants. You can download a part of all 177 subjects to save disk space. Run 'Datasets/HCP/read_nii1.py' to generate the final fmri voxels uesd in this work.
+`TGBD/movie_frame.zip` contains the training images which are extracted from movies. `TGBD/hcp_Movie_fmri/XXX` contains the corresponding fmri voxels of different participants. You can download a part of all 177 subjects to save disk space. Run `Datasets/HCP/read_nii1.py` to generate the final fmri voxels uesd in this work.
 
 
 #### Setp 2 Edit the test yml file
 
-Edit 'Brain_decoding/options/train/xxxx.yml' to make sure the data/model paths are correct.
-'subj1 or 177.yml' means training the model on 1 or 177 subjects.
+Edit `Brain_decoding/options/train/xxxx.yml` to make sure the data/model paths are correct.
+`subj1 or 177.yml` means training the model on 1 or 177 subjects.
 
 #### Setp 3 Run the command
 
-'''
+```
 cd Brain_decoding
 python train.py --opt options/test/xxxx.yml
-'''
+```
 
 
 ## ❤️ Acknowledgments
