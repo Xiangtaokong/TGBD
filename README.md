@@ -2,7 +2,7 @@
 
 <a href='https://arxiv.org/abs/2410.14445'><img src='https://img.shields.io/badge/arXiv-2410.14445-b31b1b.svg'></a> &nbsp;&nbsp;
 
-Authors: Xiangtao Kong<sup>*</sup>, Kexin Huang<sup>*</sup>, [Ping Li](https://scholar.google.com/citations?user=Z0mAYS4AAAAJ&hl=en&oi=ao)<sup>†</sup> and [Lei Zhang](https://scholar.google.com/citations?user=tAK5l1IAAAAJ&hl=en&oi=ao)<sup>†</sup>
+Authors: Xiangtao Kong<sup>* </sup>, Kexin Huang<sup>* </sup>, [Ping Li](https://scholar.google.com/citations?user=Z0mAYS4AAAAJ&hl=en&oi=ao)<sup>†</sup> and [Lei Zhang](https://scholar.google.com/citations?user=tAK5l1IAAAAJ&hl=en&oi=ao)<sup>†</sup>
 
 
 ## Abstract
