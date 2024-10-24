@@ -98,7 +98,12 @@ If our code helps your research or work, please consider citing our paper.
 The following are BibTeX references:
 
 ```
-
+@article{kong2024toward,
+  title={Toward Generalizing Visual Brain Decoding to Unseen Subjects},
+  author={Kong, Xiangtao and Huang, Kexin and Li, Ping and Zhang, Lei},
+  journal={arXiv preprint arXiv:2410.14445},
+  year={2024}
+}
 ```
 
 ## 🎫 License
