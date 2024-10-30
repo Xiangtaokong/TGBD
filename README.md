@@ -88,7 +88,9 @@ python train.py --opt options/test/xxxx.yml
 ```
 
 
-## ❤️ Acknowledgments
+## ❤️ Acknowledgmentst
+
+We use Pytorch Lightning template from [this project](https://github.com/miracleyoo/pytorch-lightning-template) and thank the excellent code of [MindEye](https://github.com/MedARC-AI/fMRI-reconstruction-NSD). 
 
 ## 📧 Contact
 If you have any questions, please feel free to contact: `xiangtao.kong@connect.polyu.hk`
