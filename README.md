@@ -61,7 +61,7 @@ Edit `Brain_decoding/options/test/xxxx.yml` to make sure the data/model paths ar
 
 #### Setp 4 Edit the Brain_decoding/model/Brain_Model.py
 
-Change sys.path.append('/home/notebook/data/personal/S9053103/TGBD/CLIP') to your path "xxx/xxx/TGBD/CLIP"
+Change `sys.path.append('/home/notebook/data/personal/S9053103/TGBD/CLIP')` to your path `"xxx/xxx/TGBD/CLIP"`
 
 #### Setp 5 Run the command
 
@@ -86,7 +86,7 @@ Edit `Brain_decoding/options/train/xxxx.yml` to make sure the data/model paths a
 
 #### Setp 3 Edit the Brain_decoding/model/Brain_Model.py
 
-Change sys.path.append('/home/notebook/data/personal/S9053103/TGBD/CLIP') to your path "xxx/xxx/TGBD/CLIP"
+Change `sys.path.append('/home/notebook/data/personal/S9053103/TGBD/CLIP')` to your path `"xxx/xxx/TGBD/CLIP"`
 
 #### Setp 4 Run the command
 
